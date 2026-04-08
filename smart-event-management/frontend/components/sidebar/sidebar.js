@@ -9,54 +9,141 @@
 const PlanoraSidebar = (() => {
 
     // ---- Configuration ----
-    const NAV_ITEMS = [
-        { section: 'Main', items: [
-            { id: 'home',       label: 'Home',          href: '../home/home.html',
-              icon: '<svg class="nav-icon" viewBox="0 0 20 20" fill="none"><path d="M3 9.5L10 3l7 6.5V17a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M7 18V12h6v6" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>' },
-            { id: 'add-event',  label: 'Add Event',     href: '../add-event/add-event.html',
-              icon: '<svg class="nav-icon" viewBox="0 0 20 20" fill="none"><rect x="3" y="4" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M3 8h14M7 2v4M13 2v4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M10 11v4M8 13h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>' },
-            { id: 'join-event', label: 'Join Event',    href: '../join-event/join-event.html',
-              icon: '<svg class="nav-icon" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.4"/><path d="M10 7v6M7 10h6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>' },
-        ]},
-        { section: 'Manage', items: [
-            { id: 'registration', label: 'Registrations', href: '../registration/registration.html',
-              icon: '<svg class="nav-icon" viewBox="0 0 20 20" fill="none"><path d="M4 6h12M4 10h8M4 14h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>' },
-            { id: 'volunteers',   label: 'Volunteers',    href: '../volunteers/volunteers.html',
-              icon: '<svg class="nav-icon" viewBox="0 0 20 20" fill="none"><circle cx="8" cy="6" r="3" stroke="currentColor" stroke-width="1.4"/><path d="M2 17c0-3.314 2.686-6 6-6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M13 12l2 2 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>' },
-            { id: 'attendance',   label: 'Attendance',    href: '../attendance/attendance.html',
-              icon: '<svg class="nav-icon" viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M7 10l2 2 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>' },
-            { id: 'feedback',     label: 'Feedback',      href: '../feedback/feedback.html',
-              icon: '<svg class="nav-icon" viewBox="0 0 20 20" fill="none"><path d="M4 4h12a1 1 0 011 1v8a1 1 0 01-1 1H6l-3 3V5a1 1 0 011-1z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>' },
-        ]},
-        { section: 'Dashboards', items: [
-            { id: 'organizer-dashboard',   label: 'Organizer',   href: '../organizer-dashboard/organizer-dashboard.html',
-              icon: '<svg class="nav-icon" viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="11" y="3" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="3" y="11" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="11" y="11" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/></svg>' },
-            { id: 'participant-dashboard', label: 'Participant', href: '../participant-dashboard/participant-dashboard.html',
-              icon: '<svg class="nav-icon" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="4" stroke="currentColor" stroke-width="1.4"/><path d="M3 18c0-3.866 3.134-7 7-7s7 3.134 7 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>' },
-            { id: 'volunteer-dashboard',   label: 'Volunteer',   href: '../volunteer-dashboard/volunteer-dashboard.html',
-              icon: '<svg class="nav-icon" viewBox="0 0 20 20" fill="none"><path d="M10 3c0 0-6 3.5-6 8a6 6 0 0012 0c0-4.5-6-8-6-8z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>' },
-        ]},
-    ];
+    // Sidebar structure requested:
+    // Main: Home / Add Event / Join Event
+    // Manage: Organizer (dropdown), Participant (dropdown), Volunteer (dropdown)
+    const NAV = {
+        main: [
+            { id: 'home', label: 'Home', path: '/home/home.html',
+                icon: '<svg class="nav-icon" viewBox="0 0 20 20" fill="none"><path d="M3 9.5L10 3l7 6.5V17a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M7 18V12h6v6" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>' },
+            { id: 'add-event', label: 'Add Event', path: '/add-event/add-event.html',
+                icon: '<svg class="nav-icon" viewBox="0 0 20 20" fill="none"><rect x="3" y="4" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M3 8h14M7 2v4M13 2v4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M10 11v4M8 13h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>' },
+            { id: 'join-event', label: 'Join Event', path: '/join-event/join-event.html',
+                icon: '<svg class="nav-icon" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.4"/><path d="M10 7v6M7 10h6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>' },
+        ],
+        manage: [
+            {
+                id: 'group-organizer',
+                label: 'Organizer',
+                icon: '<svg class="nav-icon" viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="11" y="3" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="3" y="11" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="11" y="11" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/></svg>',
+                items: [
+                    { id: 'org-overview', label: 'Overview', path: '/organizer/overview/overview.html' },
+                    { id: 'org-my-events', label: 'My Events', path: '/organizer/my-events/my-events.html' },
+                    { id: 'org-registrations', label: 'Registrations', path: '/organizer/registrations/registrations.html' },
+                    { id: 'org-attendance', label: 'Attendance', path: '/organizer/attendance/attendance.html' },
+                    { id: 'org-volunteers', label: 'Volunteers', path: '/organizer/volunteers/volunteers.html' },
+                    { id: 'org-feedback', label: 'Feedback', path: '/organizer/feedback/feedback.html' },
+                    { id: 'org-messages', label: 'Messages', path: '/organizer/messages/messages.html' },
+                ],
+            },
+            {
+                id: 'group-participant',
+                label: 'Participant',
+                icon: '<svg class="nav-icon" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="4" stroke="currentColor" stroke-width="1.4"/><path d="M3 18c0-3.866 3.134-7 7-7s7 3.134 7 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
+                items: [
+                    { id: 'p-overview', label: 'Overview', path: '/participant/overview/overview.html' },
+                    { id: 'p-my-events', label: 'My Events', path: '/participant/my-events/my-events.html' },
+                    { id: 'p-certs', label: 'Certificates', path: '/participant/certificates/certificates.html' },
+                    { id: 'p-feedback', label: 'Feedback', path: '/participant/feedback/feedback.html' },
+                ],
+            },
+            {
+                id: 'group-volunteer',
+                label: 'Volunteer',
+                icon: '<svg class="nav-icon" viewBox="0 0 20 20" fill="none"><path d="M10 3c0 0-6 3.5-6 8a6 6 0 0012 0c0-4.5-6-8-6-8z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>',
+                items: [
+                    { id: 'v-overview', label: 'Overview', path: '/volunteer/overview/overview.html' },
+                    { id: 'v-tasks', label: 'My Tasks', path: '/volunteer/my-tasks/my-tasks.html' },
+                    { id: 'v-events', label: 'My Events', path: '/volunteer/my-events/my-events.html' },
+                    { id: 'v-messages', label: 'Messages', path: '/volunteer/messages/messages.html' },
+                ],
+            },
+        ],
+    };
 
     // ---- Build HTML ----
-    function buildSidebarHTML(activePage) {
+    function normalizeBasePath(basePath) {
+        if (!basePath) return '';
+        return basePath.endsWith('/') ? basePath.slice(0, -1) : basePath;
+    }
+
+    function hrefFor(basePath, path) {
+        const base = normalizeBasePath(basePath);
+        return `${base}${path}`;
+    }
+
+    function inferActiveFromLocation() {
+        const p = (window.location.pathname || '').toLowerCase();
+        if (p.includes('/pages/home/')) return 'home';
+        if (p.includes('/pages/add-event/')) return 'add-event';
+        if (p.includes('/pages/join-event/')) return 'join-event';
+        if (p.includes('/pages/organizer/overview/')) return 'org-overview';
+        if (p.includes('/pages/organizer/registrations/')) return 'org-registrations';
+        if (p.includes('/pages/organizer/my-events/')) return 'org-my-events';
+        if (p.includes('/pages/organizer/volunteers/')) return 'org-volunteers';
+        if (p.includes('/pages/organizer/attendance/')) return 'org-attendance';
+        if (p.includes('/pages/organizer/feedback/')) return 'org-feedback';
+        if (p.includes('/pages/organizer/messages/')) return 'org-messages';
+        if (p.includes('/pages/participant/overview/')) return 'p-overview';
+        if (p.includes('/pages/participant/my-events/')) return 'p-my-events';
+        if (p.includes('/pages/participant/certificates/')) return 'p-certs';
+        if (p.includes('/pages/participant/feedback/')) return 'p-feedback';
+        if (p.includes('/pages/volunteer/overview/')) return 'v-overview';
+        if (p.includes('/pages/volunteer/my-tasks/')) return 'v-tasks';
+        if (p.includes('/pages/volunteer/my-events/')) return 'v-events';
+        if (p.includes('/pages/volunteer/messages/')) return 'v-messages';
+        return '';
+    }
+
+    function buildSidebarHTML({ activePage, basePath }) {
         let navHTML = '';
-        NAV_ITEMS.forEach(section => {
-            navHTML += `<div class="nav-section-label">${section.section}</div>`;
-            section.items.forEach(item => {
-                const isActive = item.id === activePage ? ' active' : '';
-                navHTML += `
-                    <a href="${item.href}" class="nav-item${isActive}" data-page="${item.id}">
-                        ${item.icon}
-                        <span>${item.label}</span>
-                    </a>`;
-            });
+
+        // Main section
+        navHTML += `<div class="nav-section-label">Main</div>`;
+        NAV.main.forEach(item => {
+            const isActive = item.id === activePage ? ' active' : '';
+            navHTML += `
+                <a href="${hrefFor(basePath, item.path)}" class="nav-item${isActive}" data-page="${item.id}">
+                    ${item.icon}
+                    <span>${item.label}</span>
+                </a>`;
         });
+
+        // Manage section w/ dropdown groups
+        navHTML += `<div class="nav-section-label">Manage</div>`;
+        navHTML += `<div class="nav-group">`;
+
+        NAV.manage.forEach(group => {
+            const groupOpen = group.items.some(i => i.id === activePage);
+            navHTML += `
+              <button class="nav-group-toggle" type="button" data-group="${group.id}" aria-expanded="${groupOpen ? 'true' : 'false'}">
+                <span class="nav-group-left">
+                  ${group.icon}
+                  <span class="nav-group-label">${group.label}</span>
+                </span>
+                <svg class="nav-group-caret" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                  <path d="M3 5l4 4 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                </svg>
+              </button>
+              <div class="nav-sub ${groupOpen ? 'open' : ''}" data-sub="${group.id}">
+                ${group.items.map(item => {
+                    const isActive = item.id === activePage ? ' active' : '';
+                    return `
+                      <a href="${hrefFor(basePath, item.path)}" class="nav-item${isActive}" data-page="${item.id}">
+                        <svg class="nav-icon" viewBox="0 0 20 20" fill="none"><path d="M6 10l2 2 6-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <span>${item.label}</span>
+                      </a>`;
+                }).join('')}
+              </div>
+            `;
+        });
+
+        navHTML += `</div>`;
 
         return `
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-top">
-                <a href="../home/home.html" class="sidebar-logo">
+                <a href="${hrefFor(basePath, '/home/home.html')}" class="sidebar-logo">
                     <span class="logo-hex">⬡</span>
                     <span class="logo-name">Planora</span>
                 </a>
@@ -95,11 +182,18 @@ const PlanoraSidebar = (() => {
 
     // ---- Inject & Init ----
     function init(options = {}) {
-        const { activePage = '', container = document.body, user = null } = options;
+        const {
+            activePage = '',
+            basePath = '../../pages',
+            container = document.body,
+            user = null,
+        } = options;
+
+        const resolvedActive = activePage || inferActiveFromLocation();
 
         // Inject at start of container
         const wrapper = document.createElement('div');
-        wrapper.innerHTML = buildSidebarHTML(activePage);
+        wrapper.innerHTML = buildSidebarHTML({ activePage: resolvedActive, basePath });
 
         // Insert sidebar and overlay before the first child
         while (wrapper.firstChild) {
@@ -137,11 +231,22 @@ const PlanoraSidebar = (() => {
 
         // Logout
         const logoutBtn = document.getElementById('sidebarLogoutBtn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', () => {
-                window.location.href = '../auth/signin.html';
+        if (logoutBtn) logoutBtn.addEventListener('click', () => {
+            // Auth pages live at /pages/auth/
+            const bp = normalizeBasePath(basePath);
+            window.location.href = bp.endsWith('/pages') ? `${bp}/auth/signin.html` : `${bp}/pages/auth/signin.html`;
+        });
+
+        // Dropdown toggles
+        document.querySelectorAll('.nav-group-toggle').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const groupId = btn.getAttribute('data-group');
+                const expanded = btn.getAttribute('aria-expanded') === 'true';
+                btn.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+                const sub = document.querySelector(`.nav-sub[data-sub="${groupId}"]`);
+                if (sub) sub.classList.toggle('open', !expanded);
             });
-        }
+        });
     }
 
     return { init };

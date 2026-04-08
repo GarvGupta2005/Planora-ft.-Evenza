@@ -219,7 +219,7 @@ function attachLiveValidation(inputId, errorId, validator) {
             msg.textContent = '✓ Signed in! Redirecting to your dashboard…';
 
             setTimeout(() => {
-                // TODO: redirect based on role from API response
+                // Redirect to main app home (role-aware dashboard is accessible from sidebar)
                 window.location.href = '../../pages/home/home.html';
             }, 1000);
 
@@ -325,11 +325,11 @@ function attachLiveValidation(inputId, errorId, validator) {
             msg.textContent = `✓ Account created! Welcome to Planora, ${firstName}.`;
 
             setTimeout(() => {
-                // TODO: redirect based on role
+                // Redirect based on chosen role
                 const redirectMap = {
-                    organizer: '../../pages/organizer-dashboard/organizer-dashboard.html',
-                    participant: '../../pages/participant-dashboard/participant-dashboard.html',
-                    volunteer: '../../pages/volunteer-dashboard/volunteer-dashboard.html',
+                    organizer: '../../pages/organizer/overview/overview.html',
+                    participant: '../../pages/participant/overview/overview.html',
+                    volunteer: '../../pages/volunteer/overview/overview.html',
                 };
                 window.location.href = redirectMap[role] || '../../pages/home/home.html';
             }, 1200);
