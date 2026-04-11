@@ -36,6 +36,11 @@ async function initHome() {
             if (el) el.textContent = initials;
         });
         document.querySelectorAll('.pt-name, .pd-name').forEach(el => el.textContent = user.fullName);
+        
+        // Update role UI
+        const role = (user.roles && user.roles.length > 0) ? user.roles[0] : 'Participant';
+        const displayRole = role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
+        document.querySelectorAll('.user-role, .pt-role').forEach(el => el.textContent = displayRole);
     }
 
     try {
