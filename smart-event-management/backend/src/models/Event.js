@@ -39,6 +39,11 @@ const eventSchema = new mongoose.Schema(
             required: true,
             min: 1
         },
+        color: String,
+        emoji: String,
+        endDate: Date,
+        isVirtual: Boolean,
+        virtualLink: String,
         registrationDeadline: {
             type: Date
         },

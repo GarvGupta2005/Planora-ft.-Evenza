@@ -5,6 +5,9 @@
 
 'use strict';
 
+// API Configuration
+const API_BASE_URL = 'http://127.0.0.1:5000/api';
+
 /* ============================================
    STARFIELD
 ============================================ */
@@ -16,6 +19,7 @@
     const COUNT = 120;
 
     function resize() {
+        if (!canvas) return;
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
     }
@@ -163,11 +167,6 @@ function attachLiveValidation(inputId, errorId, validator) {
             input.classList.remove('input-success');
         }
     });
-    input.addEventListener('blur', () => {
-        if (!validator(input.value) && input.value) {
-            // show inline error on blur if value present
-        }
-    });
 }
 
 
@@ -212,20 +211,37 @@ function attachLiveValidation(inputId, errorId, validator) {
         msg.textContent = '';
 
         try {
-            // TODO: replace with real API call e.g. await api.signin({ email, password })
-            await simulateRequest(1400);
+            const response = await fetch(`${API_BASE_URL}/auth/signin`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message || 'Invalid email or password');
+
+            const { token, user } = result.data;
+            if (token) localStorage.setItem('token', token);
+            if (user) localStorage.setItem('user', JSON.stringify(user));
 
             msg.className = 'form-message success';
             msg.textContent = '✓ Signed in! Redirecting to your dashboard…';
 
             setTimeout(() => {
-                // Redirect to main app home (role-aware dashboard is accessible from sidebar)
-                window.location.href = '../../pages/home/home.html';
+                const userRole = (user?.roles?.[0] || 'Participant').toLowerCase();
+                const redirectMap = {
+                    organizer: '../../pages/organizer/overview/overview.html',
+                    participant: '../../pages/participant/overview/overview.html',
+                    volunteer: '../../pages/volunteer/overview/overview.html',
+                };
+                window.location.href = redirectMap[userRole] || '../../pages/participant/overview/overview.html';
             }, 1000);
 
         } catch (err) {
             msg.className = 'form-message error';
-            msg.textContent = err.message || 'Invalid email or password. Please try again.';
+            msg.textContent = (err.name === 'TypeError' && err.message === 'Failed to fetch') 
+                ? 'Could not connect to the server. Is the backend running at ' + API_BASE_URL + '?' 
+                : err.message || 'Invalid email or password. Please try again.';
             btn.classList.remove('loading');
             btn.disabled = false;
         }
@@ -318,14 +334,24 @@ function attachLiveValidation(inputId, errorId, validator) {
         msg.textContent = '';
 
         try {
-            // TODO: replace with real API call e.g. await api.signup({ firstName, lastName, email, password, role })
-            await simulateRequest(1600);
+            const fullName = `${firstName} ${lastName}`;
+            const response = await fetch(`${API_BASE_URL}/auth/signup`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fullName, email, password, roles: [role] })
+            });
+
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message || 'Failed to create account');
+
+            const { token, user } = result.data;
+            if (token) localStorage.setItem('token', token);
+            if (user) localStorage.setItem('user', JSON.stringify(user));
 
             msg.className = 'form-message success';
             msg.textContent = `✓ Account created! Welcome to Planora, ${firstName}.`;
 
             setTimeout(() => {
-                // Redirect based on chosen role
                 const redirectMap = {
                     organizer: '../../pages/organizer/overview/overview.html',
                     participant: '../../pages/participant/overview/overview.html',
@@ -336,7 +362,9 @@ function attachLiveValidation(inputId, errorId, validator) {
 
         } catch (err) {
             msg.className = 'form-message error';
-            msg.textContent = err.message || 'Something went wrong. Please try again.';
+            msg.textContent = (err.name === 'TypeError' && err.message === 'Failed to fetch') 
+                ? 'Could not connect to the server. Is the backend running at ' + API_BASE_URL + '?' 
+                : err.message || 'Something went wrong. Please try again.';
             btn.classList.remove('loading');
             btn.disabled = false;
         }
@@ -351,25 +379,9 @@ function attachLiveValidation(inputId, errorId, validator) {
     const btn = document.getElementById('googleBtn');
     if (!btn) return;
     btn.addEventListener('click', () => {
-        // TODO: trigger Firebase Google auth popup
-        // e.g. firebase.auth().signInWithPopup(googleProvider)
         console.log('[Planora] Google OAuth triggered');
     });
 })();
-
-
-/* ============================================
-   SIMULATE API REQUEST (remove in production)
-============================================ */
-function simulateRequest(ms) {
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            // Simulate occasional error for testing: uncomment to test error state
-            // if (Math.random() < 0.3) { reject(new Error('Invalid email or password.')); return; }
-            resolve();
-        }, ms);
-    });
-}
 
 
 /* ============================================

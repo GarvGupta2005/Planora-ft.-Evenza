@@ -12,6 +12,11 @@ const getAllEvents = asyncHandler(async (req, res) => {
     return sendResponse(res, 200, "Events fetched successfully", events);
 });
 
+const getMyEvents = asyncHandler(async (req, res) => {
+    const events = await eventService.getMyEvents(req.user.userId);
+    return sendResponse(res, 200, "My events fetched successfully", events);
+});
+
 const getEventById = asyncHandler(async (req, res) => {
     const event = await eventService.getEventById(req.params.id);
     return sendResponse(res, 200, "Event fetched successfully", event);
@@ -27,10 +32,32 @@ const deleteEvent = asyncHandler(async (req, res) => {
     return sendResponse(res, 200, "Event deleted successfully");
 });
 
+const uploadBanner = asyncHandler(async (req, res) => {
+    if (!req.file) {
+        const err = new Error("No image file provided");
+        err.statusCode = 400;
+        throw err;
+    }
+
+    const event = await eventService.getEventById(req.params.id);
+    if (event.organizer._id.toString() !== req.user.userId.toString()) {
+        const err = new Error("Only the organizer can upload a banner for this event");
+        err.statusCode = 403;
+        throw err;
+    }
+
+    event.banner = `/uploads/${req.file.filename}`;
+    await event.save();
+
+    return sendResponse(res, 200, "Event banner updated", { banner: event.banner });
+});
+
 module.exports = {
     createEvent,
     getAllEvents,
+    getMyEvents,
     getEventById,
     updateEvent,
-    deleteEvent
+    deleteEvent,
+    uploadBanner
 };

@@ -1,6 +1,8 @@
 /* Settings — settings.js */
 'use strict';
 
+const API_BASE = 'http://localhost:5000/api';
+
 function toggleSwitch(el) {
   if (!el) return;
   const current = el.getAttribute('aria-checked') === 'true';
@@ -13,17 +15,18 @@ function wireToggle(id) {
   el.addEventListener('click', () => toggleSwitch(el));
 }
 
-function changePassword() {
+async function changePassword() {
   const cur = document.getElementById('curPw')?.value || '';
   const pw1 = document.getElementById('newPw')?.value || '';
   const pw2 = document.getElementById('newPw2')?.value || '';
+  const token = localStorage.getItem('token');
 
-  if (!cur || cur.length < 6) {
+  if (!cur) {
     alert('Please enter your current password.');
     return;
   }
-  if (pw1.length < 8) {
-    alert('New password must be at least 8 characters.');
+  if (pw1.length < 6) {
+    alert('New password must be at least 6 characters.');
     return;
   }
   if (pw1 !== pw2) {
@@ -31,10 +34,28 @@ function changePassword() {
     return;
   }
 
-  alert('Password updated (frontend stub).');
-  document.getElementById('curPw').value = '';
-  document.getElementById('newPw').value = '';
-  document.getElementById('newPw2').value = '';
+  try {
+    const res = await fetch(`${API_BASE}/users/me/password`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ currentPassword: cur, newPassword: pw1 })
+    });
+
+    if (res.ok) {
+        alert('Password updated successfully!');
+        if (document.getElementById('curPw')) document.getElementById('curPw').value = '';
+        if (document.getElementById('newPw')) document.getElementById('newPw').value = '';
+        if (document.getElementById('newPw2')) document.getElementById('newPw2').value = '';
+    } else {
+        const data = await res.json();
+        alert(data.message || 'Failed to update password');
+    }
+  } catch (err) {
+    console.error('Error changing password:', err);
+  }
 }
 
 function saveSettings() {
@@ -46,8 +67,8 @@ function saveSettings() {
     showProfile: get('tProfile'),
     shareAnalytics: get('tAnalytics'),
   };
-  console.log('[Planora] settings saved', payload);
-  alert('Settings saved (frontend stub).');
+  // Logic could be added here if backend has a dedicated settings endpoint
+  alert('Preferences saved locally. (Backend settings API planned)');
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -55,6 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('changePwBtn')?.addEventListener('click', changePassword);
   document.getElementById('saveSettingsBtn')?.addEventListener('click', saveSettings);
   document.getElementById('signOutAllBtn')?.addEventListener('click', () => {
-    alert('Signed out of all devices (frontend stub).');
+    localStorage.clear();
+    window.location.href = '../../auth/signin.html';
   });
 });

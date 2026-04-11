@@ -323,20 +323,22 @@ async function publishEvent() {
     btn.classList.add('loading');
     btn.disabled = true;
 
+    const token = localStorage.getItem('token');
+
     const payload = {
         title: state.name,
         description: state.description,
         category: state.category,
         emoji: state.emoji,
         color: state.color,
-        startDate: state.startDate,
-        startTime: state.startTime,
+        eventDate: state.startDate,
         endDate: state.endDate,
+        startTime: state.startTime,
         endTime: state.endTime,
         isVirtual: state.isVirtual,
-        venue: state.isVirtual ? null : state.venue,
+        venue: state.isVirtual ? (state.virtualLink || 'Virtual') : state.venue,
         virtualLink: state.isVirtual ? state.virtualLink : null,
-        participantCapacity: parseInt(state.participantCap),
+        capacity: parseInt(state.participantCap),
         volunteerSlots: parseInt(state.volunteerSlots) || 0,
         requireVolunteerApproval: state.requireVolunteerApproval,
         enableWaitlist: state.enableWaitlist,
@@ -346,17 +348,16 @@ async function publishEvent() {
     };
 
     try {
-        // TODO: Replace with real API call:
-        // const res = await fetch('/api/events', {
-        //   method: 'POST',
-        //   headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        //   body: JSON.stringify(payload),
-        // });
-        // const data = await res.json();
-        // const joinCode = data.joinCode;
+        const res = await fetch('http://localhost:5000/api/events', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify(payload),
+        });
 
-        await simulateRequest(1800);
-        const joinCode = generateJoinCode(); // replace with data.joinCode from API
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Failed to create event');
+
+        const joinCode = data.data.joinCode;
 
         btn.classList.remove('loading');
         btn.disabled = false;
@@ -607,12 +608,12 @@ function initSidebar() {
 /* ============================================
    LOGOUT
 ============================================ */
-function initLogout() {
-    document.getElementById('logoutBtn')?.addEventListener('click', () => {
-        // TODO: firebase.auth().signOut()
-        window.location.href = '../auth/signin.html';
+    document.querySelectorAll('#logoutBtn, .pd-logout').forEach(btn => {
+        btn.addEventListener('click', () => {
+            localStorage.clear();
+            window.location.href = '../auth/signin.html';
+        });
     });
-}
 
 /* ============================================
    SET MINIMUM DATE (today) on date inputs
@@ -644,6 +645,14 @@ document.addEventListener('DOMContentLoaded', () => {
     initSidebar();
     initLogout();
     initDateDefaults();
+    // Initialize User View
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (user.fullName) {
+        document.querySelectorAll('.user-name').forEach(el => el.textContent = user.fullName);
+        const initials = user.fullName.split(' ').map(n => n[0]).join('').toUpperCase();
+        document.querySelectorAll('.user-avatar, .topbar-avatar').forEach(el => el.textContent = initials);
+    }
+
     updatePreview();
     goToStep(1);
 });

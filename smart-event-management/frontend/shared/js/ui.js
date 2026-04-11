@@ -34,7 +34,7 @@ function initLogout() {
   if (!logoutBtn) return;
 
   logoutBtn.addEventListener('click', () => {
-    // Keep auth pages untouched; just navigate to existing sign-in.
+    localStorage.clear();
     window.location.href = '../../auth/signin.html';
   });
 }

@@ -12,6 +12,7 @@ const {
 const router = express.Router();
 
 router.get("/", eventController.getAllEvents);
+router.get("/my-events", authMiddleware, eventController.getMyEvents);
 router.get("/:id", eventController.getEventById);
 
 router.post(
@@ -37,6 +38,16 @@ router.delete(
     authMiddleware,
     roleMiddleware(ROLES.ORGANIZER, ROLES.ADMIN),
     eventController.deleteEvent
+);
+
+// POST /api/events/:id/banner — upload event banner
+const upload = require("../middleware/uploadMiddleware");
+router.post(
+    "/:id/banner",
+    authMiddleware,
+    roleMiddleware(ROLES.ORGANIZER, ROLES.ADMIN),
+    upload.single("banner"),
+    eventController.uploadBanner
 );
 
 module.exports = router;

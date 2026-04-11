@@ -1,21 +1,79 @@
 /* Profile — profile.js */
 'use strict';
 
-const ACTIVITY = [
-  { text: 'Created <strong>Tech Summit 2026</strong> event.', time: 'Yesterday', color: '#7c3aed' },
-  { text: 'Approved <strong>2 volunteer registrations</strong>.', time: '2 days ago', color: '#10b981' },
-  { text: 'Received feedback for <strong>UX Research Panel</strong> (avg 4.8★).', time: 'Last week', color: '#06b6d4' },
-];
+const API_BASE = 'http://localhost:5000/api';
 
-function renderActivity() {
+/**
+ * Initialize Profile Page
+ */
+async function initProfile() {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    window.location.href = '../../auth/signin.html';
+    return;
+  }
+
+  try {
+    // 1. Fetch User Data
+    const userRes = await fetch(`${API_BASE}/users/me`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const userData = await userRes.json();
+    const user = userData.data;
+
+    if (user) {
+        updateProfileUI(user);
+    }
+
+    // 2. Fetch Notifications as "Activity"
+    const noteRes = await fetch(`${API_BASE}/notifications`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const noteData = await noteRes.json();
+    renderActivity(noteData.data?.notifications || []);
+
+  } catch (err) {
+    console.error('Error loading profile:', err);
+  }
+}
+
+function updateProfileUI(user) {
+  const initials = user.fullName.split(' ').map(n => n[0]).join('').toUpperCase();
+  
+  // Sidebar/Topbar updates
+  document.querySelectorAll('.user-name').forEach(el => el.textContent = user.fullName);
+  document.querySelectorAll('.user-avatar, .topbar-avatar, .p-avatar').forEach(el => el.textContent = initials);
+
+  // Profile Specific
+  const nameDisp = document.getElementById('pNameDisplay');
+  const emailDisp = document.getElementById('pEmailDisplay');
+  const roleDisp = document.getElementById('pRoleDisplay');
+  const nameInput = document.getElementById('nameInput');
+  const emailInput = document.getElementById('emailInput');
+
+  if (nameDisp) nameDisp.textContent = user.fullName;
+  if (emailDisp) emailDisp.textContent = user.email;
+  if (roleDisp) roleDisp.textContent = user.roles[0] || 'User';
+  
+  if (nameInput) nameInput.value = user.fullName;
+  if (emailInput) emailInput.value = user.email;
+}
+
+function renderActivity(notes) {
   const el = document.getElementById('activity');
   if (!el) return;
-  el.innerHTML = ACTIVITY.map(a => `
+
+  if (notes.length === 0) {
+    el.innerHTML = '<div style="padding:10px;color:var(--text-dim);font-size:13px">No recent activity detected.</div>';
+    return;
+  }
+
+  el.innerHTML = notes.slice(0, 5).map(n => `
     <div class="act-item">
-      <div class="act-dot" style="background:${a.color}"></div>
+      <div class="act-dot" style="background:#7c3aed"></div>
       <div style="flex:1">
-        <div class="act-text">${a.text}</div>
-        <div class="act-time">${a.time}</div>
+        <div class="act-text"><strong>${n.title}:</strong> ${n.body}</div>
+        <div class="act-time">${new Date(n.createdAt).toLocaleString()}</div>
       </div>
     </div>
   `).join('');
@@ -23,8 +81,8 @@ function renderActivity() {
 
 function setEditing(isEditing) {
   document.getElementById('nameInput')?.toggleAttribute('disabled', !isEditing);
+  // Email usually stays non-editable in simple flows, but we follow the UI
   document.getElementById('emailInput')?.toggleAttribute('disabled', !isEditing);
-  document.getElementById('roleInput')?.toggleAttribute('disabled', !isEditing);
 
   const editBtn = document.getElementById('editBtn');
   const saveBtn = document.getElementById('saveBtn');
@@ -32,31 +90,47 @@ function setEditing(isEditing) {
   if (saveBtn) saveBtn.style.display = isEditing ? 'inline-flex' : 'none';
 }
 
-function save() {
+async function save() {
   const name = document.getElementById('nameInput')?.value?.trim() || '';
-  const email = document.getElementById('emailInput')?.value?.trim() || '';
-  const role = document.getElementById('roleInput')?.value || 'Organizer';
+  const token = localStorage.getItem('token');
 
-  if (!name || !email) {
-    alert('Name and email are required.');
+  if (!name) {
+    alert('Name is required.');
     return;
   }
 
-  const nameDisplay = document.getElementById('pNameDisplay');
-  const emailDisplay = document.getElementById('pEmailDisplay');
-  const roleDisplay = document.getElementById('pRoleDisplay');
+  try {
+    const res = await fetch(`${API_BASE}/users/me`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ fullName: name })
+    });
 
-  if (nameDisplay) nameDisplay.textContent = name;
-  if (emailDisplay) emailDisplay.textContent = email;
-  if (roleDisplay) roleDisplay.textContent = role;
-
-  setEditing(false);
-  alert('Profile saved (frontend stub).');
+    if (res.ok) {
+        const data = await res.json();
+        const user = data.data;
+        updateProfileUI(user);
+        // Update local storage user if stored
+        const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+        storedUser.fullName = user.fullName;
+        localStorage.setItem('user', JSON.stringify(storedUser));
+        
+        setEditing(false);
+        alert('Profile updated successfully!');
+    } else {
+        const data = await res.json();
+        alert(data.message || 'Failed to update profile');
+    }
+  } catch (err) {
+    console.error('Error saving profile:', err);
+  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  renderActivity();
-
-  document.getElementById('editBtn')?.addEventListener('click', () => setEditing(true));
-  document.getElementById('saveBtn')?.addEventListener('click', save);
+    initProfile();
+    document.getElementById('editBtn')?.addEventListener('click', () => setEditing(true));
+    document.getElementById('saveBtn')?.addEventListener('click', save);
 });

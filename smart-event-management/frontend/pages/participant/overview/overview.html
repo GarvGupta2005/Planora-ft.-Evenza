@@ -71,12 +71,22 @@
 
         <div class="p-overview-grid">
             <!-- Upcoming events -->
-            <div class="section">
-                <div class="section-head">
-                    <span class="section-title">Upcoming Events</span>
-                    <a href="../my-events/my-events.html" class="section-link">View all →</a>
+            <div style="display:flex;flex-direction:column;gap:14px">
+                <div class="section">
+                    <div class="section-head">
+                        <span class="section-title">Upcoming Events</span>
+                        <a href="../my-events/my-events.html" class="section-link">View all →</a>
+                    </div>
+                    <div class="upcoming-events-list" id="upcomingList"></div>
                 </div>
-                <div class="upcoming-events-list" id="upcomingList"></div>
+
+                <div class="section">
+                    <div class="section-head">
+                        <span class="section-title">Recent Notices</span>
+                        <div class="section-link" style="color:var(--text-dim);font-size:11px" id="noticeCountEl">0 unread</div>
+                    </div>
+                    <div class="notice-list" id="noticeList" style="padding:16px"></div>
+                </div>
             </div>
 
             <!-- Certificates + Feedback Summary -->

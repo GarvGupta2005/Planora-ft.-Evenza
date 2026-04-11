@@ -16,7 +16,7 @@ const generateToken = (user) => {
     );
 };
 
-const signup = async ({ fullName, email, password }) => {
+const signup = async ({ fullName, email, password, roles }) => {
     const existingUser = await User.findOne({ email });
 
     if (existingUser) {
@@ -25,11 +25,23 @@ const signup = async ({ fullName, email, password }) => {
         throw error;
     }
 
+    // Map submitted role strings to canonical cased roles
+    const roleMap = {
+        organizer: ROLES.ORGANIZER,
+        participant: ROLES.PARTICIPANT,
+        volunteer: ROLES.VOLUNTEER,
+        admin: ROLES.ADMIN,
+    };
+
+    const mappedRoles = Array.isArray(roles) && roles.length > 0
+        ? roles.map(r => roleMap[r.toLowerCase()] || ROLES.PARTICIPANT)
+        : [ROLES.PARTICIPANT];
+
     const user = await User.create({
         fullName,
         email,
         password,
-        roles: [ROLES.PARTICIPANT]
+        roles: mappedRoles
     });
 
     const token = generateToken(user);

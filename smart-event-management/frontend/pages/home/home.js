@@ -1,292 +1,383 @@
-/* ============================================
-   PLANORA HOME — home.js  (updated)
-============================================ */
+/* Planora Home — home.js */
 'use strict';
 
-/* ---- Static data ---- */
-const USER = {
-    name: 'Rishabh Kumar',
-    firstName: 'Rishabh',
-    initials: 'RK',
-    role: 'Organizer',
-    email: 'rishabh@planora.app',
-    organized: 1,
-    joined: 2,
-    volunteering: 1,
-};
-
-const EVENTS = [
-    { id:1, name:'Tech Summit 2026',       emoji:'💻', color:'#7c3aed', status:'live',     date:'Today · 10:00 AM',   reg:312, cap:400 },
-    { id:2, name:'Design Workshop',        emoji:'🎨', color:'#06b6d4', status:'upcoming',  date:'May 12 · 2:00 PM',   reg:48,  cap:60  },
-    { id:3, name:'Dev Bootcamp',           emoji:'⚙️', color:'#10b981', status:'upcoming',  date:'Jun 4 · 9:00 AM',    reg:201, cap:250 },
-    { id:4, name:'Product Launch Meetup',  emoji:'🚀', color:'#f59e0b', status:'upcoming',  date:'Jun 18 · 6:00 PM',   reg:134, cap:200 },
-    { id:5, name:'UX Research Panel',      emoji:'🔍', color:'#a855f7', status:'past',      date:'Mar 22 · 11:00 AM',  reg:90,  cap:100 },
-    { id:6, name:'AI & ML Workshop',       emoji:'🤖', color:'#ec4899', status:'past',      date:'Mar 10 · 3:00 PM',   reg:175, cap:180 },
-];
-
-const NOTIFICATIONS = [
-    { text:'<strong>Priya Ramesh</strong> registered for Tech Summit 2026',         time:'2 min ago',  color:'#7c3aed', unread:true  },
-    { text:'<strong>Evenza AI:</strong> Design Workshop has 3 open volunteer slots', time:'15 min ago', color:'#a855f7', unread:true  },
-    { text:'<strong>12 new registrations</strong> for Dev Bootcamp today',           time:'1h ago',     color:'#06b6d4', unread:true  },
-    { text:'<strong>Feedback received</strong> for UX Research Panel — 4.8★ avg',    time:'3h ago',     color:'#10b981', unread:false },
-    { text:'<strong>Attendance exported</strong> for AI & ML Workshop',              time:'Yesterday',  color:'#f59e0b', unread:false },
-];
-
-/* ============================================
-   TOPBAR — date & greeting
-============================================ */
-function initTopbar() {
-    // Date
-    const dateEl = document.getElementById('topbarDate');
-    if (dateEl) {
-        const now = new Date();
-        dateEl.textContent = now.toLocaleDateString('en-IN', {
-            weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
-        });
-    }
-
-    // Time-aware greeting
-    const hour = new Date().getHours();
-    const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-    const heroEl = document.getElementById('heroGreeting');
-    if (heroEl) heroEl.textContent = `${greet}, ${USER.firstName} 👋`;
-}
-
-/* ============================================
-   SEARCH — live filter
-============================================ */
+const API_BASE = 'http://localhost:5000/api';
+let myRegistrations = [];
+let publicEvents = [];
+let organizerStats = null;
+let myFeedbackHistory = [];
+let myNotifications = [];
 let activeFilter = 'all';
 
-function initSearch() {
-    const input = document.getElementById('searchInput');
-    if (!input) return;
-
-    let timer;
-    input.addEventListener('input', () => {
-        clearTimeout(timer);
-        timer = setTimeout(() => {
-            const q = input.value.trim().toLowerCase();
-            if (!q) { renderEvents(activeFilter); return; }
-            const results = EVENTS.filter(e => e.name.toLowerCase().includes(q));
-            renderEventList(results);
-        }, 220);
-    });
-
-    // ⌘K focus shortcut
-    document.addEventListener('keydown', e => {
-        if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-            e.preventDefault();
-            input.focus();
-            input.select();
-        }
-    });
-}
-
-/* ============================================
-   EVENTS FEED
-============================================ */
-function renderEvents(filter) {
-    const list = filter === 'all' ? EVENTS : EVENTS.filter(e => e.status === filter);
-    renderEventList(list);
-}
-
-function renderEventList(list) {
-    const container = document.getElementById('eventsList');
-    if (!container) return;
-
-    if (!list.length) {
-        container.innerHTML = `<div style="text-align:center;padding:36px 0;color:var(--text-dim);font-size:13px;">No events found.</div>`;
+/**
+ * Initialize Home Page
+ */
+async function initHome() {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        window.location.href = '../auth/signin.html';
         return;
     }
 
-    container.innerHTML = list.map((ev, i) => `
-    <div class="event-card" style="animation-delay:${i * 55}ms"
-         onclick="window.location='../event-details/event-details.html'">
-      <div class="event-card-color" style="background:${ev.color}"></div>
-      <div class="event-card-icon">${ev.emoji}</div>
-      <div class="event-card-body">
-        <div class="event-card-name">${ev.name}</div>
-        <div class="event-card-meta">
-          <span class="ec-meta">
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><rect x=".5" y="1.5" width="9" height="8" rx="1" stroke="currentColor" stroke-width="1"/><path d="M.5 4h9M3 .5v2M7 .5v2" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>
-            ${ev.date}
-          </span>
-          <span class="ec-meta">
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><circle cx="3.5" cy="3" r="1.5" stroke="currentColor" stroke-width="1"/><path d="M.5 8.5c0-1.657 1.343-3 3-3" stroke="currentColor" stroke-width="1" stroke-linecap="round"/><circle cx="7.5" cy="4.5" r="1.5" stroke="currentColor" stroke-width="1"/><path d="M5.5 8.5c0-1.105.895-2 2-2" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>
-            ${ev.reg} / ${ev.cap}
-          </span>
-        </div>
-      </div>
-      <div class="event-card-right">
-        <span class="ev-badge badge-${ev.status}">${ev.status === 'live' ? '● Live' : ev.status === 'upcoming' ? 'Upcoming' : 'Past'}</span>
-        <span class="ev-pct">${Math.round((ev.reg / ev.cap) * 100)}% full</span>
-      </div>
-    </div>
-  `).join('');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (user.fullName) {
+        const firstName = user.fullName.split(' ')[0];
+        const greetEl = document.getElementById('heroGreeting');
+        if (greetEl) {
+            const hour = new Date().getHours();
+            const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+            greetEl.textContent = `${greet}, ${firstName} 👋`;
+        }
+        
+        // Update user UI
+        document.querySelectorAll('.user-name').forEach(el => el.textContent = user.fullName);
+        const initials = user.fullName.split(' ').map(n => n[0]).join('').toUpperCase();
+        document.querySelectorAll('.user-avatar, .topbar-avatar, #sidebarAvatar, #topbarAvatar, .pd-avatar').forEach(el => {
+            if (el) el.textContent = initials;
+        });
+        document.querySelectorAll('.pt-name, .pd-name').forEach(el => el.textContent = user.fullName);
+    }
+
+    try {
+        // 1. Fetch My Registrations (Joined events & Volunteer assignments)
+        const myRes = await fetch(`${API_BASE}/registrations/my-registrations`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        const myData = await myRes.json();
+        myRegistrations = myData.data || [];
+
+        // 2. Fetch Organizer Stats (if any events owned)
+        const orgRes = await fetch(`${API_BASE}/dashboard/organizer`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        const orgData = await orgRes.json();
+        organizerStats = orgData.data || null;
+
+        // 3. Fetch My Feedback (to check what is "Pending")
+        const fbRes = await fetch(`${API_BASE}/feedback/my`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        const fbData = await fbRes.json();
+        myFeedbackHistory = fbData.data || [];
+
+        // 4. Fetch Public Events (to show in main feed)
+        const pubRes = await fetch(`${API_BASE}/events`);
+        const pubData = await pubRes.json();
+        publicEvents = pubData.data || [];
+
+        // 5. Fetch Notifications
+        const noteRes = await fetch(`${API_BASE}/notifications`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        if (noteRes.ok) {
+            const noteData = await noteRes.json();
+            myNotifications = noteData.data?.notifications || [];
+            updateNotifBadge(noteData.data?.unreadCount || 0);
+        }
+
+        // Update UI
+        updateSummaryPills();
+        updateSummaryCards();
+        renderEvents('all');
+        renderUpcoming();
+        renderNotifications();
+
+    } catch (err) {
+        console.error('Error initializing home:', err);
+    }
 }
 
-function initEventTabs() {
-    const tabs = document.getElementById('eventTabs');
-    if (!tabs) return;
-    tabs.querySelectorAll('.tab-btn').forEach(btn => {
+function updateSummaryPills() {
+    const orgCount = organizerStats ? organizerStats.totalEvents : 0;
+    const joinCount = myRegistrations.filter(r => r.role === 'participant').length;
+    const volCount = myRegistrations.filter(r => r.role === 'volunteer').length;
+
+    const pills = document.querySelector('.role-summary');
+    if (!pills) return;
+
+    const pPill = pills.querySelector('.role-pill--purple b');
+    const cPill = pills.querySelector('.role-pill--cyan b');
+    const gPill = pills.querySelector('.role-pill--green b');
+
+    if (pPill) pPill.textContent = orgCount;
+    if (cPill) cPill.textContent = joinCount;
+    if (gPill) gPill.textContent = volCount;
+}
+
+function updateSummaryCards() {
+    const container = document.querySelector('.summary-cards');
+    if (!container) return;
+
+    // 1. Events Organized
+    const orgCard = container.querySelector('.scard--purple');
+    if (orgCard) {
+        const num = orgCard.querySelector('.scard-num');
+        const hint = orgCard.querySelector('.scard-hint');
+        num.textContent = organizerStats ? organizerStats.totalEvents : 0;
+        hint.textContent = organizerStats && organizerStats.totalEvents > 0 ? 'Active event management' : 'Create your first event';
+    }
+
+    // 2. Events Joined
+    const joinCard = container.querySelector('.scard--cyan');
+    if (joinCard) {
+        const num = joinCard.querySelector('.scard-num');
+        const chip = joinCard.querySelector('.scard-chip');
+        const joined = myRegistrations.filter(r => r.role === 'participant');
+        num.textContent = joined.length;
+        chip.textContent = `${joined.length} Total`;
+    }
+
+    // 3. Volunteer Assignments
+    const volCard = container.querySelector('.scard--green');
+    if (volCard) {
+        const num = volCard.querySelector('.scard-num');
+        const assignments = myRegistrations.filter(r => r.role === 'volunteer');
+        num.textContent = assignments.length;
+    }
+
+    // 4. Upcoming Events (Joined + Organized)
+    const upcomingCard = container.querySelector('.scard--amber');
+    if (upcomingCard) {
+        const num = upcomingCard.querySelector('.scard-num');
+        const joinedUpcoming = myRegistrations.filter(r => new Date(r.event.eventDate) > new Date()).length;
+        num.textContent = joinedUpcoming;
+    }
+
+    // 5. Pending Tasks (Simplified: Count participants waiting for approval if organizer)
+    const taskCard = container.querySelector('.scard--red');
+    if (taskCard) {
+        const num = taskCard.querySelector('.scard-num');
+        num.textContent = organizerStats ? (organizerStats.totalRegistrations || 0) : 0; // Simplified
+    }
+
+    // 6. Feedback Pending
+    const fbCard = container.querySelector('.scard--pink');
+    if (fbCard) {
+        const num = fbCard.querySelector('.scard-num');
+        // Count events attended but no feedback given yet
+        const attended = myRegistrations.filter(r => r.status === 'attended');
+        const pendingFb = attended.filter(r => !myFeedbackHistory.some(f => f.event?._id === r.event._id)).length;
+        num.textContent = pendingFb;
+    }
+}
+
+function renderEvents(filter) {
+    const container = document.getElementById('eventsList');
+    if (!container) return;
+
+    let list = publicEvents;
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    if (filter !== 'all') {
+        if (filter === 'live') {
+            list = publicEvents.filter(e => {
+                const start = new Date(e.eventDate);
+                const end = e.endDate ? new Date(e.endDate) : new Date(start.getTime() + 24 * 60 * 60 * 1000);
+                return now >= start && now <= end;
+            });
+        } else if (filter === 'upcoming') {
+            list = publicEvents.filter(e => {
+                const start = new Date(e.eventDate);
+                start.setHours(0,0,0,0);
+                return start >= today;
+            });
+        } else if (filter === 'past') {
+            list = publicEvents.filter(e => {
+                const start = new Date(e.eventDate);
+                start.setHours(23,59,59,999);
+                return start < now;
+            });
+        }
+    }
+
+    if (list.length === 0) {
+        container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-dim)">No events found.</div>';
+        return;
+    }
+
+    container.innerHTML = list.map((ev, i) => {
+        const regCount = ev.registrationCount || ev.registrationsCount || 0;
+        const pct = Math.round((regCount / ev.capacity) * 100);
+        const status = getStatus(ev);
+        
+        return `
+        <div class="event-card" style="animation-delay:${i * 50}ms" onclick="viewEvent('${ev._id}')">
+          <div class="event-card-color" style="background:${ev.color || '#7c3aed'}"></div>
+          <div class="event-card-icon">${ev.emoji || '🎯'}</div>
+          <div class="event-card-body">
+            <div class="event-card-name">${ev.title}</div>
+            <div class="event-card-meta">
+              <span class="ec-meta">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><rect x=".5" y="1.5" width="9" height="8" rx="1" stroke="currentColor" stroke-width="1"/><path d="M.5 4h9M3 .5v2M7 .5v2" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>
+                ${new Date(ev.eventDate).toLocaleDateString()} · ${ev.startTime || 'TBD'}
+              </span>
+              <span class="ec-meta">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><circle cx="3.5" cy="3" r="1.5" stroke="currentColor" stroke-width="1"/><path d="M.5 8.5c0-1.657 1.343-3 3-3" stroke="currentColor" stroke-width="1" stroke-linecap="round"/><circle cx="7.5" cy="4.5" r="1.5" stroke="currentColor" stroke-width="1"/><path d="M5.5 8.5c0-1.105.895-2 2-2" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>
+                ${regCount} / ${ev.capacity}
+              </span>
+            </div>
+          </div>
+          <div class="event-card-right">
+            <span class="ev-badge badge-${status}">${status === 'live' ? '● Live' : status.charAt(0).toUpperCase() + status.slice(1)}</span>
+            <span class="ev-pct">${pct}% full</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+}
+
+function getStatus(ev) {
+    const now = new Date();
+    const start = new Date(ev.eventDate);
+    const end = ev.endDate ? new Date(ev.endDate) : new Date(start.getTime() + 24 * 60 * 60 * 1000);
+    if (now >= start && now <= end) return 'live';
+    if (now < start) return 'upcoming';
+    return 'past';
+}
+
+function viewEvent(id) {
+    window.location.href = `../event-details/event-details.html?id=${id}`;
+}
+
+function renderUpcoming() {
+    const container = document.getElementById('upcomingList');
+    if (!container) return;
+    
+    // Combine my events and organized events and sort by date
+    const list = myRegistrations.filter(r => new Date(r.event.eventDate) >= new Date()).slice(0, 3);
+    
+    if (list.length === 0) {
+        container.innerHTML = '<div style="padding:10px;color:var(--text-dim);font-size:12px">No upcoming events.</div>';
+        return;
+    }
+
+    container.innerHTML = list.map(r => `
+        <div class="upcoming-item" onclick="viewEvent('${r.event._id}')">
+          <div class="up-dot" style="background:${r.event.color || '#7c3aed'}"></div>
+          <div class="up-info">
+            <div class="up-name">${r.event.title}</div>
+            <div class="up-date">${new Date(r.event.eventDate).toLocaleDateString()}</div>
+          </div>
+          <span class="up-reg" style="text-transform:capitalize">${r.role}</span>
+        </div>
+    `).join('');
+}
+
+function renderNotifications() {
+    const list = document.getElementById('notifList');
+    if (!list) return;
+
+    if (myNotifications.length === 0) {
+        list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-dim)">No notifications.</div>';
+        return;
+    }
+
+    list.innerHTML = myNotifications.slice(0, 5).map(n => `
+      <div class="notif-item${!n.isRead ? ' unread' : ''}">
+        <div class="notif-dot" style="background:var(--purple)"></div>
+        <div class="notif-body">
+          <div class="notif-text"><strong>${n.title}:</strong> ${n.body}</div>
+          <div class="notif-time">${formatTimeAgo(n.createdAt)}</div>
+        </div>
+      </div>
+    `).join('');
+}
+
+function updateNotifBadge(count) {
+    const badge = document.getElementById('notifCount');
+    if (badge) {
+        badge.textContent = count;
+        badge.style.display = count > 0 ? 'flex' : 'none';
+    }
+}
+
+function formatTimeAgo(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMin = Math.round(diffMs / 60000);
+    if (diffMin < 1) return 'Just now';
+    if (diffMin < 60) return `${diffMin}m ago`;
+    const diffHrs = Math.round(diffMin / 60);
+    if (diffHrs < 24) return `${diffHrs}h ago`;
+    return date.toLocaleDateString();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    initHome();
+    
+    // Event Tabs
+    document.getElementById('eventTabs')?.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            tabs.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             activeFilter = btn.dataset.filter;
             renderEvents(activeFilter);
         });
     });
-    renderEvents('all');
-}
-
-/* ============================================
-   UPCOMING WIDGET
-============================================ */
-function renderUpcoming() {
-    const container = document.getElementById('upcomingList');
-    if (!container) return;
-    const list = EVENTS.filter(e => e.status === 'upcoming').slice(0, 3);
-    container.innerHTML = list.map(ev => `
-    <div class="upcoming-item">
-      <div class="up-dot" style="background:${ev.color}"></div>
-      <div class="up-info">
-        <div class="up-name">${ev.name}</div>
-        <div class="up-date">${ev.date}</div>
-      </div>
-      <span class="up-reg">${ev.reg} reg.</span>
-    </div>
-  `).join('');
-}
-
-/* ============================================
-   NOTIFICATIONS
-============================================ */
-function initNotifications() {
-    const btn      = document.getElementById('notifBtn');
-    const panel    = document.getElementById('notifPanel');
-    const overlay  = document.getElementById('notifOverlay');
-    const clearBtn = document.getElementById('notifClear');
-    const list     = document.getElementById('notifList');
-    if (!btn || !panel) return;
-
-    if (list) {
-        list.innerHTML = NOTIFICATIONS.map(n => `
-      <div class="notif-item${n.unread ? ' unread' : ''}">
-        <div class="notif-dot" style="background:${n.color}"></div>
-        <div class="notif-body">
-          <div class="notif-text">${n.text}</div>
-          <div class="notif-time">${n.time}</div>
-        </div>
-      </div>
-    `).join('');
-    }
-
-    const open  = () => { panel.classList.add('open'); overlay?.classList.add('visible'); };
-    const close = () => { panel.classList.remove('open'); overlay?.classList.remove('visible'); };
-
-    btn.addEventListener('click', e => { e.stopPropagation(); panel.classList.contains('open') ? close() : open(); });
-    overlay?.addEventListener('click', close);
-    clearBtn?.addEventListener('click', () => {
-        document.querySelectorAll('.notif-item.unread').forEach(el => el.classList.remove('unread'));
-        const badge = document.getElementById('notifCount');
-        if (badge) { badge.textContent = '0'; badge.style.display = 'none'; }
-    });
-}
-
-/* ============================================
-   PROFILE DROPDOWN
-============================================ */
-function initProfileDropdown() {
-    const trigger  = document.getElementById('profileTrigger');
-    const dropdown = document.getElementById('profileDropdown');
-    const overlay  = document.getElementById('profileOverlay');
-    if (!trigger || !dropdown) return;
-
-    const open  = () => { dropdown.classList.add('open'); overlay?.classList.add('visible'); };
-    const close = () => { dropdown.classList.remove('open'); overlay?.classList.remove('visible'); };
-
-    trigger.addEventListener('click', e => { e.stopPropagation(); dropdown.classList.contains('open') ? close() : open(); });
-    overlay?.addEventListener('click', close);
 
     // Logout
-    document.getElementById('logoutBtn2')?.addEventListener('click', () => {
-        window.location.href = '../auth/signin.html';
+    document.querySelectorAll('#logoutBtn, #logoutBtn2').forEach(btn => {
+        btn.addEventListener('click', () => {
+            localStorage.clear();
+            window.location.href = '../auth/signin.html';
+        });
     });
-}
-
-/* ============================================
-   FAB
-============================================ */
-function initFab() {
-    const btn  = document.getElementById('fabBtn');
-    const menu = document.getElementById('fabMenu');
-    if (!btn || !menu) return;
-
-    btn.addEventListener('click', () => {
-        const open = menu.classList.toggle('open');
-        btn.classList.toggle('open', open);
-    });
-    document.addEventListener('click', e => {
-        if (!btn.contains(e.target) && !menu.contains(e.target)) {
-            menu.classList.remove('open');
-            btn.classList.remove('open');
+    
+    // Search
+    document.getElementById('searchInput')?.addEventListener('input', (e) => {
+        const q = e.target.value.toLowerCase();
+        if (!q) {
+            renderEvents(activeFilter);
+            return;
+        }
+        const results = publicEvents.filter(ev => ev.title.toLowerCase().includes(q));
+        const container = document.getElementById('eventsList');
+        if (container) {
+            container.innerHTML = results.map((ev, i) => `
+                <div class="event-card" onclick="viewEvent('${ev._id}')">
+                <div class="event-card-color" style="background:${ev.color || '#7c3aed'}"></div>
+                <div class="event-card-icon">${ev.emoji || '🎯'}</div>
+                <div class="event-card-body">
+                    <div class="event-card-name">${ev.title}</div>
+                    <div class="event-card-meta"><span>${new Date(ev.eventDate).toLocaleDateString()}</span></div>
+                </div>
+                </div>
+            `).join('');
         }
     });
-}
 
-/* ============================================
-   SIDEBAR (mobile)
-============================================ */
-function initSidebar() {
-    const toggle   = document.getElementById('menuToggle');
-    const sidebar  = document.getElementById('sidebar');
-    const overlay  = document.getElementById('sidebarOverlay');
-    const closeBtn = document.getElementById('sidebarClose');
-    if (!toggle || !sidebar) return;
+    // FAB
+    const fabBtn = document.getElementById('fabBtn');
+    const fabMenu = document.getElementById('fabMenu');
+    if (fabBtn && fabMenu) {
+        fabBtn.addEventListener('click', () => {
+            fabMenu.classList.toggle('active');
+            fabBtn.classList.toggle('active');
+        });
+    }
 
-    const open  = () => { sidebar.classList.add('open'); overlay?.classList.add('visible'); document.body.style.overflow = 'hidden'; };
-    const close = () => { sidebar.classList.remove('open'); overlay?.classList.remove('visible'); document.body.style.overflow = ''; };
-
-    toggle.addEventListener('click', open);
-    overlay?.addEventListener('click', close);
-    closeBtn?.addEventListener('click', close);
-}
-
-/* ============================================
-   EVENZA BANNER DISMISS
-============================================ */
-function initEvenzaBanner() {
-    document.getElementById('evenzaClose')?.addEventListener('click', () => {
-        const banner = document.getElementById('evenzaBanner');
-        if (!banner) return;
-        banner.style.transition = 'opacity .3s ease, transform .3s ease';
-        banner.style.opacity = '0';
-        banner.style.transform = 'translateY(-6px)';
-        setTimeout(() => banner.remove(), 320);
-    });
-}
-
-/* ============================================
-   LOGOUT
-============================================ */
-function initLogout() {
-    document.getElementById('logoutBtn')?.addEventListener('click', () => {
-        window.location.href = '../auth/signin.html';
-    });
-}
-
-/* ============================================
-   INIT
-============================================ */
-document.addEventListener('DOMContentLoaded', () => {
-    initTopbar();
-    initSearch();
-    initEventTabs();
-    renderUpcoming();
-    initNotifications();
-    initProfileDropdown();
-    initFab();
-    initSidebar();
-    initEvenzaBanner();
-    initLogout();
+    // Panels (Notifications / Profile)
+    setupPanel('notifBtn', 'notifPanel', 'notifOverlay');
+    setupPanel('profileTrigger', 'profileDropdown', 'profileOverlay');
 });
+
+function setupPanel(btnId, panelId, overlayId) {
+    const btn = document.getElementById(btnId);
+    const panel = document.getElementById(panelId);
+    const overlay = document.getElementById(overlayId);
+
+    if (!btn || !panel || !overlay) return;
+
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        panel.classList.toggle('active');
+        overlay.classList.toggle('active');
+    });
+
+    overlay.addEventListener('click', () => {
+        panel.classList.remove('active');
+        overlay.classList.remove('active');
+    });
+}

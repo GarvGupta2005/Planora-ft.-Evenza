@@ -8,12 +8,30 @@ const errorMiddleware = require("./middleware/errorMiddleware");
 
 const app = express();
 
+// Parse comma-separated allowed origins from .env
+const allowedOrigins = (process.env.CLIENT_URL || "*")
+    .split(",")
+    .map((o) => o.trim())
+    .filter(Boolean);
+
 app.use(
     cors({
-        origin: process.env.CLIENT_URL || "*",
-        credentials: true
+        origin: (origin, callback) => {
+            // Allow requests with no origin (e.g. Postman, curl, mobile)
+            if (!origin) return callback(null, true);
+            if (allowedOrigins.includes("*") || allowedOrigins.includes(origin)) {
+                return callback(null, true);
+            }
+            callback(new Error(`CORS: origin ${origin} not allowed`));
+        },
+        credentials: true,
+        methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allowedHeaders: ["Content-Type", "Authorization"]
     })
 );
+
+// Explicitly handle preflight for all routes
+app.options("*", cors());
 
 app.use(morgan("dev"));
 app.use(express.json());

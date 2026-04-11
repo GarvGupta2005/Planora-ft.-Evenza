@@ -1,34 +1,76 @@
 /* Volunteer My Tasks — my-tasks.js */
 'use strict';
 
-const TASKS = [
-  { id: 1, title: 'Confirm arrival time', meta: 'Tech Summit 2026 · Due today', status: 'pending' },
-  { id: 2, title: 'Review venue map', meta: 'Tech Summit 2026 · Due today', status: 'pending' },
-  { id: 3, title: 'Collect badge kit', meta: 'On-site · Due 9:30 AM', status: 'in-progress' },
-  { id: 4, title: 'Setup check-in table', meta: 'Tech Summit 2026 · On-site', status: 'in-progress' },
-  { id: 5, title: 'Submit end-of-day summary', meta: 'After event · Due tonight', status: 'done' },
-];
-
+const API_BASE = 'http://localhost:5000/api';
+let myTasks = [];
 let filter = 'all';
+
+/**
+ * Initialize My Tasks
+ */
+async function initTasks() {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        window.location.href = '../../auth/signin.html';
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/volunteers/my-tasks`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        myTasks = data.data || [];
+        render();
+    } catch (err) {
+        console.error('Error loading tasks:', err);
+    }
+}
 
 function pill(status) {
   if (status === 'pending') return '<span class="status-pill pending">Pending</span>';
   if (status === 'in-progress') return '<span class="status-pill progress">In progress</span>';
-  return '<span class="status-pill done">Done</span>';
+  if (status === 'completed') return '<span class="status-pill done">Done</span>';
+  return `<span class="status-pill">${status}</span>`;
 }
 
-function toggleDone(id) {
-  const t = TASKS.find(x => x.id === id);
+async function toggleDone(id) {
+  const token = localStorage.getItem('token');
+  const t = myTasks.find(x => x._id === id);
   if (!t) return;
-  t.status = t.status === 'done' ? 'pending' : 'done';
-  render();
+  
+  const newStatus = t.status === 'completed' ? 'pending' : 'completed';
+  
+  try {
+    const res = await fetch(`${API_BASE}/volunteers/tasks/${id}/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ status: newStatus })
+    });
+    
+    if (res.ok) {
+        await initTasks();
+    } else {
+        const data = await res.json();
+        alert(data.message || 'Failed to update task');
+    }
+  } catch (err) {
+    console.error('Error updating task status:', err);
+  }
 }
 
 function render() {
   const list = document.getElementById('taskList');
   if (!list) return;
 
-  const data = filter === 'all' ? TASKS : TASKS.filter(t => t.status === filter);
+  const data = filter === 'all' ? myTasks : myTasks.filter(t => {
+      // Map frontend filter names to backend status names
+      const statusMap = { 'done': 'completed', 'progress': 'in-progress', 'pending': 'pending' };
+      return t.status === (statusMap[filter] || filter);
+  });
 
   if (!data.length) {
     list.innerHTML = `
@@ -42,21 +84,18 @@ function render() {
   }
 
   list.innerHTML = data.map(t => `
-    <div class="task ${t.status === 'done' ? 'done' : ''}">
+    <div class="task ${t.status === 'completed' ? 'done' : ''}">
       <div class="task-left">
-        <button class="task-check" aria-label="Toggle done" onclick="toggleDone(${t.id})">
-          ${t.status === 'done' ? '✓' : ''}
+        <button class="task-check" aria-label="Toggle done" onclick="toggleDone('${t._id}')">
+          ${t.status === 'completed' ? '✓' : ''}
         </button>
         <div style="min-width:0">
-          <div class="task-title">${t.title}</div>
-          <div class="task-meta">${t.meta}</div>
+          <div class="task-title">${t.taskDescription}</div>
+          <div class="task-meta">${t.event?.title || 'Event Unknown'} · Priority: ${t.priority || 'Medium'}</div>
         </div>
       </div>
       <div class="task-right">
         ${pill(t.status)}
-        <button class="btn-icon" title="Details" onclick="alert('Task details (frontend stub)')">
-          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="5.5" stroke="currentColor" stroke-width="1.2"/><path d="M7.5 6.5v4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M7.5 4.5v.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-        </button>
       </div>
     </div>
   `).join('');
@@ -77,9 +116,8 @@ function initTabs() {
 
 document.addEventListener('DOMContentLoaded', () => {
   initTabs();
-  render();
+  initTasks();
 });
 
-// Expose for inline click handler
 window.toggleDone = toggleDone;
 

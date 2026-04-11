@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const Event = require("../models/Event");
 
 const generateJoinCode = () => {
@@ -22,6 +23,27 @@ const createEvent = async (payload, userId) => {
 
 const getAllEvents = async () => {
     return Event.find().populate("organizer", "fullName email").sort({ createdAt: -1 });
+};
+
+const getMyEvents = async (userId) => {
+    return await Event.aggregate([
+        { $match: { organizer: new mongoose.Types.ObjectId(userId) } },
+        {
+            $lookup: {
+                from: "registrations",
+                localField: "_id",
+                foreignField: "event",
+                as: "registrations"
+            }
+        },
+        {
+            $addFields: {
+                registrationCount: { $size: "$registrations" }
+            }
+        },
+        { $project: { registrations: 0 } },
+        { $sort: { createdAt: -1 } }
+    ]);
 };
 
 const getEventById = async (eventId) => {
@@ -80,6 +102,7 @@ const deleteEvent = async (eventId, userId) => {
 module.exports = {
     createEvent,
     getAllEvents,
+    getMyEvents,
     getEventById,
     updateEvent,
     deleteEvent
