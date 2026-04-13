@@ -312,11 +312,26 @@ body {
   caret-color: var(--purple-light);
   transition: var(--transition);
   outline: none;
+  animation: input-float 4s ease-in-out infinite alternate;
 }
+.code-box:nth-child(1) { animation-delay: 0.0s; }
+.code-box:nth-child(2) { animation-delay: 0.2s; }
+.code-box:nth-child(3) { animation-delay: 0.4s; }
+.code-box:nth-child(4) { animation-delay: 0.6s; }
+.code-box:nth-child(5) { animation-delay: 0.8s; }
+.code-box:nth-child(6) { animation-delay: 1.0s; }
+
+@keyframes input-float {
+  0% { transform: translateY(0px); }
+  100% { transform: translateY(-5px); }
+}
+
 .code-box:focus {
   border-color: var(--purple);
   background: rgba(124,58,237,0.06);
   box-shadow: 0 0 0 3px var(--purple-glow);
+  animation: none;
+  transform: translateY(-5px);
 }
 .code-box.filled {
   border-color: rgba(124,58,237,0.45);

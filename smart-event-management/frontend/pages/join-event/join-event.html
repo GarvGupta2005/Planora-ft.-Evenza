@@ -31,8 +31,6 @@
             <span>Planora</span>
         </a>
         <div class="nav-actions">
-            <a href="../home/home.html" class="nav-link">Home</a>
-            <a href="../auth/auth.html" class="btn-outline-sm">Sign In</a>
         </div>
     </div>
 </nav>
@@ -73,16 +71,8 @@
             <div class="code-input-wrapper" id="codeInputWrapper">
                 <label class="input-label">Event Code</label>
                 <div class="code-field-group">
-                    <!-- Split code boxes (6-char code) -->
-                    <div class="code-boxes" id="codeBoxes">
-                        <input class="code-box" maxlength="1" type="text" inputmode="text" autocomplete="off" data-index="0" />
-                        <input class="code-box" maxlength="1" type="text" inputmode="text" autocomplete="off" data-index="1" />
-                        <input class="code-box" maxlength="1" type="text" inputmode="text" autocomplete="off" data-index="2" />
-                        <div class="code-separator">—</div>
-                        <input class="code-box" maxlength="1" type="text" inputmode="text" autocomplete="off" data-index="3" />
-                        <input class="code-box" maxlength="1" type="text" inputmode="text" autocomplete="off" data-index="4" />
-                        <input class="code-box" maxlength="1" type="text" inputmode="text" autocomplete="off" data-index="5" />
-                    </div>
+                    <!-- Split code boxes (Dynamic) -->
+                    <div class="code-boxes" id="codeBoxes"></div>
 
                     <!-- OR paste full code -->
                     <div class="paste-row">
@@ -100,7 +90,7 @@
                 <div class="validation-status" id="validationStatus">
                     <div class="status-idle">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 8v4m0 4h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-                        Code is case-insensitive. Letters and numbers only.
+                        Only numeric input allowed.
                     </div>
                     <div class="status-checking hidden">
                         <div class="spinner-sm"></div>
